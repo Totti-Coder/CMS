@@ -5,6 +5,21 @@ include 'incluir/conexion.php';
 // Iniciar sesión para acceder al carrito
 session_start();
 
+// Verificar si el usuario está logueado (como cliente o como administrador)
+$es_admin = isset($_SESSION['admin']);
+$es_usuario = isset($_SESSION['usuario']);
+
+// Si NO es admin ni tiene el rol de cliente, se redirige al login
+if (!$es_admin && !$es_usuario) {
+    
+    // Mensaje opcional para que el usuario sepa por qué fue redirigido
+    $_SESSION['alerta_login'] = "Debes iniciar sesión para finalizar la compra.";
+    
+    // Redirigir a la página de inicio de sesión
+    header("Location: admin/inicio_sesion.php"); 
+    exit();
+}
+
 // Verificar si el carrito tiene productos. Si está vacío, redirige al carrito.
 if (empty($_SESSION['carrito'])) {
     header("Location: carrito.php");
@@ -16,9 +31,24 @@ $error_stock = false;
 
 // Bucle para calcular el total y verificar el stock antes de que el usuario haga click.
 foreach ($_SESSION['carrito'] as $item) {
-    // Consulta segura para obtener datos del producto
-    $consulta = "SELECT precio, stock, nombre FROM productos WHERE id_producto = " . $item['id_producto'];
-    $resultado = $conexion->query($consulta);
+
+    $id_producto = (int)$item['id_producto']; 
+    $stmt = $conexion-> prepare("SELECT precio, stock, nombre FROM productos WHERE id_producto = ?");
+
+    if ($stmt === false) {
+        // Manejo de error si la preparación falla
+        error_log("Error en la preparación de la consulta de stock: " . $conexion->error);
+        $_SESSION['alerta_carrito'] = "Error interno del sistema al verificar productos. (Código 500)";
+        header("Location: carrito.php");
+        exit();
+    }
+    
+    // Vincular el parámetro: 'i' por integer (entero)
+    $stmt->bind_param("i", $id_producto);
+    
+    // Ejecutar la consulta y obtener el resultado
+    $stmt-> execute();
+    $resultado = $stmt-> get_result();
 
     if ($resultado && $resultado->num_rows > 0) {
         $producto = $resultado->fetch_assoc();
@@ -27,6 +57,7 @@ foreach ($_SESSION['carrito'] as $item) {
         if ($item['cantidad'] > $producto['stock']) {
             // Si la cantidad en el carrito excede el stock, marca error y redirige.
             $_SESSION['alerta_carrito'] = "Lo sentimos: No hay suficientes unidades de <strong>" . htmlspecialchars($producto['nombre']) . "</strong> disponibles. Por favor, ajusta la cantidad en el carrito.";
+            $stmt-> close();
             header("Location: carrito.php");
             exit();
         }
@@ -34,18 +65,64 @@ foreach ($_SESSION['carrito'] as $item) {
         // Calcular total solo si hay stock suficiente
         $total_a_pagar += $producto['precio'] * $item['cantidad'];
     }
-}
-
-// LÓGICA DE PROCESAMIENTO DEL PAGO (Se ejecuta al presionar "Completar Compra")
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Limpiar el carrito después del pago exitoso
-    unset($_SESSION['carrito']);
     
-    // Redirigir a la página de confirmación
-    header("Location: pago_exitoso.php");
-    exit();
+    // Asegurarse de cerrar la sentencia preparada
+    $stmt->close();
+}
+// ====================================================================
+
+// LÓGICA DE PROCESAMIENTO DEL PAGO 
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    
+    // ACTUALIZACIÓN DE STOCK CON TRANSACCIÓN
+    $conexion-> begin_transaction(); // Iniciar transacción
+    $error_al_procesar = false;
+
+    try {
+        // RESTAR EL STOCK
+        foreach ($_SESSION['carrito'] as $item) {
+            $id_producto = (int)$item['id_producto'];
+            $cantidad_comprada = (int)$item['cantidad'];
+            
+            // La condición 'stock >= ?' previene stock negativo por si acaso.
+            $stmt = $conexion->prepare("UPDATE productos SET stock = stock - ? WHERE id_producto = ? AND stock >= ?");
+            
+            // i = integer, en cada dato va un integer
+            $stmt->bind_param("iii", $cantidad_comprada, $id_producto, $cantidad_comprada);
+            $stmt->execute();
+            
+            // Si no se afectó ninguna fila, algo salió mal (stock se agotó entre la validación y el pago)
+            if ($stmt->affected_rows === 0) {
+                 // Lanzar una excepción para forzar el ROLLBACK
+                 throw new Exception("Stock insuficiente o error al actualizar el producto ID: {$id_producto}.");
+            }
+            $stmt->close();
+        }
+        
+        // Si todo el stock se actualizó correctamente, se hace un commit para guardar los cambios
+        $conexion-> commit();
+        
+        // Limpiar el carrito luego del pago exitoso
+        unset($_SESSION['carrito']);
+        
+        // Redireccion a la página de confirmación
+        header("Location: pago_exitoso.php");
+        exit();
+
+    } catch (Exception $e) {
+        // En caso de que surja cualquier error, hacemos rollback
+        $conexion-> rollback();
+        
+        // Redirigir al carrito con un mensaje de error detallado
+        $_SESSION['alerta_carrito'] = "Error al finalizar la compra. Por favor, revise su carrito. " . htmlspecialchars($e->getMessage());
+        header("Location: carrito.php");
+        exit();
+    }
 }
 ?>
+
+
+
 <!DOCTYPE html>
 <html lang="es">
 <head>

@@ -8,6 +8,12 @@ if (!isset($_SESSION['carrito'])) {
     $_SESSION['carrito'] = [];
 }
 
+// Verificar si el usuario está logueado (como cliente o como administrador)
+$es_admin = isset($_SESSION['admin']);
+$es_usuario = isset($_SESSION['usuario']);
+$esta_logueado = $es_admin || $es_usuario; 
+
+
 // Inicializar la variable de mensaje de alerta para mostrar posteriormente
 $mensaje_alerta = '';
 
@@ -20,7 +26,8 @@ if (isset($_GET['accion']) && isset($_GET['id'])) {
         // Lógica para AGREGAR productos (solo 1 unidad inicial o se genera la alerta si ya existe uno con el mismo id)
         $encontrado = false;
         $cantidad_a_agregar = 1;
-        // Busqueda dentro del carrito para comprobar si el producto ya se habia agregado
+        
+        // Busqueda dentro del carrito para comprobar si el producto ya se habia agregado -> & te permite editar la cantidad del producto sobre la marcha, actualizando $_SESSION['carrito']
         foreach ($_SESSION['carrito'] as &$item) {
             if ($item['id_producto'] == $id_producto) {
                 // Producto encontrado: establece la alerta y NO suma cantidad
@@ -153,6 +160,7 @@ if (isset($_SESSION['alerta_carrito'])) {
                     if (!empty($_SESSION['carrito'])) {
                         foreach ($_SESSION['carrito'] as $item) {
                             // Consulta para obtener los datos del producto
+                            // NOTA: Se recomienda usar Sentencias Preparadas aquí.
                             $consulta = "SELECT * FROM productos WHERE id_producto = " . $item['id_producto'];
                             $resultado = $conexion->query($consulta);
                             
@@ -189,8 +197,21 @@ if (isset($_SESSION['alerta_carrito'])) {
             </table>
         </div>
         <h3 class="text-right">Total: $<?php echo number_format($total, 2); ?></h3>
-        <div class="text-right">
-            <a href="pago.php" class="btn btn-success">Proceder al Pago</a>
+        
+        <div class="text-right mt-3">
+            <?php if ($esta_logueado && $total > 0): ?>
+                <a href="pago.php" class="btn btn-success btn-lg">
+                    Proceder al Pago
+                </a>
+            <?php elseif ($total > 0): ?>
+                <a href="admin/inicio_sesion.php" class="btn btn-warning btn-lg">
+                    Iniciar Sesión para Pagar
+                </a>
+            <?php else: ?>
+                <button type="button" class="btn btn-secondary btn-lg" disabled>
+                    Carrito Vacío
+                </button>
+            <?php endif; ?>
         </div>
     </div>
     <?php include 'incluir/pie.php'; ?>

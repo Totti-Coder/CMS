@@ -1,12 +1,7 @@
-/* Aplicar la fuente a todo el cuerpo para que sea la fuente predeterminada */
 body {
     font-family: 'Montserrat', sans-serif;
-    /* Puedes ajustar el tamaño base si lo deseas */
-    /* font-size: 16px; */
 }
 
-/* Opcional: para darle una fuente diferente a los encabezados, para contraste */
 h1, h2, h3, h4, .display-4 {
     font-family: 'Montserrat', sans-serif;
-    /* Puedes probar otra fuente aquí para un mayor impacto visual, si lo deseas */
 }
