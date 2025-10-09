@@ -10,14 +10,14 @@
             <!-- Muestra el simbolo de copyright y la funcion date con el año actual -->
             <p class="mb-1">&copy; <?php echo date("Y"); ?> Fruteria. Todos los derechos reservados.</p>
             <div class="d-flex justify-content-center">
-                <a href="https://www.instagram.com" target="_blank" class="text-white mx-2">
+                <a href="https://www.instagram.com/pablo_totti" target="_blank" class="text-white mx-2">
                     <i class="bi bi-instagram" style="font-size: 1.3rem;"></i>
                 </a>
-                <a href="https://www.facebook.com" target="_blank" class="text-white mx-2">
+                <a href="https://www.facebook.com/profile.php?id=100002512109027" target="_blank" class="text-white mx-2">
                     <i class="bi bi-facebook" style="font-size: 1.3rem;"></i>
                 </a>
-                <a href="https://www.twitter.com" target="_blank" class="text-white mx-2">
-                    <i class="bi bi-twitter" style="font-size: 1.3rem;"></i>
+                <a href="https://github.com/Totti-Coder" target="_blank" class="text-white mx-2">
+                    <i class="bi bi-github" style="font-size: 1.3rem;"></i>
                 </a>
             </div>
         </div>

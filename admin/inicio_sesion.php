@@ -23,8 +23,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $password = $_POST['password'];
 
     // --- Sentencia Preparada para la seguridad ---
-    // NOTA: En un entorno de producción, nunca se debe guardar la contraseña directamente.
-    // Se debe usar password_hash() para el registro y password_verify() para el login.
     $stmt = $conexion->prepare("SELECT rol FROM usuarios WHERE usuario = ? AND password = ?");
 
     if ($stmt === false) {
@@ -87,13 +85,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <div class="card login-card">
                     <div class="card-body">
                         <h2 class="text-center mb-4">
-                            <i class="fas fa-lock text-primary"></i> Iniciar Sesión
+                            <i class="fas fa-lock text-success"></i> Iniciar Sesión
                         </h2>
                         <?php 
                         if (isset($error)) { 
                             echo '<div class="alert alert-danger text-center">' . $error . '</div>'; 
                         } 
-                        // Muestra la alerta de redirección si viene de otra página
                         if ($alerta_login) { 
                             echo '<div class="alert alert-warning text-center">' . $alerta_login . '</div>'; 
                         }
@@ -118,10 +115,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     <input type="password" class="form-control" id="password" name="password" required>
                                 </div>
                             </div>
-                            <button type="submit" class="btn btn-primary btn-block mt-4">
+                            <button type="submit" class="btn btn-success btn-block mt-4">
                                 <i class="fas fa-sign-in-alt"></i> Entrar
                             </button>
-                            <p class="text-center mt-3"><a href="../index.php">Volver a la tienda</a></p>
+                            
+                            <p class="text-center mt-3">
+                                ¿No tienes cuenta? <a href="registro.php">Regístrate aquí</a>.
+                            </p>
+                            
+                            <p class="text-center"><a href="../index.php">Volver a la tienda</a></p>
                         </form>
                     </div>
                 </div>

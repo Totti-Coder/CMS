@@ -1,14 +1,15 @@
 <?php
 // Incluir la conexión a la base de datos
 include 'incluir/conexion.php';
-// INICIA LA SESIÓN para poder acceder a $_SESSION['alerta_carrito']
+
+
 session_start(); 
 
-// 1. Verificar si hay un mensaje de alerta en la sesión
+// Verifica si hay un mensaje de alerta en la sesión
 $mensaje_alerta = '';
 if (isset($_SESSION['alerta_carrito'])) {
     $mensaje_alerta = $_SESSION['alerta_carrito'];
-    unset($_SESSION['alerta_carrito']); // 2. Borrar el mensaje para que no se muestre al recargar
+    unset($_SESSION['alerta_carrito']); // Borra el mensaje para que no se muestre al recargar
 }
 ?>
 
@@ -32,7 +33,7 @@ if (isset($_SESSION['alerta_carrito'])) {
     <div class="container mt-5">
         
         <?php 
-        // 3. Mostrar la alerta de Bootstrap si el mensaje existe
+        //Muestra la alerta de Bootstrap
         if ($mensaje_alerta): 
         ?>
             <div class="alert alert-warning alert-dismissible fade show" role="alert">

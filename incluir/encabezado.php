@@ -6,11 +6,12 @@ if (session_status() == PHP_SESSION_NONE) {
 // Variables clave para la lógica condicional
 $es_admin = isset($_SESSION['admin']);
 $es_usuario = isset($_SESSION['usuario']);
-$esta_logueado = $es_admin || $es_usuario; 
+$esta_logueado = $es_admin || $es_usuario;
 ?>
 
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -18,6 +19,7 @@ $esta_logueado = $es_admin || $es_usuario;
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
+
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <div class="container">
@@ -44,7 +46,11 @@ $esta_logueado = $es_admin || $es_usuario;
                             <i class="bi bi-wallet"></i> Pagar
                         </a>
                     </li>
-
+                    <li class="nav-item mr-3">
+                        <a class="nav-link" href="admin/registro.php">
+                            <i class="bi bi-person-plus"></i> Registro
+                        </a>
+                    </li>
                     <?php if ($es_admin): ?>
                         <li class="nav-item mr-3">
                             <a class="nav-link text-primary font-weight-bold" href="admin/gestion_productos.php">
@@ -52,7 +58,7 @@ $esta_logueado = $es_admin || $es_usuario;
                             </a>
                         </li>
                     <?php endif; ?>
-                    
+
                     <?php if ($esta_logueado): ?>
                         <li class="nav-item">
                             <a class="nav-link text-danger" href="admin/cerrar_sesion.php">
@@ -66,10 +72,11 @@ $esta_logueado = $es_admin || $es_usuario;
                             </a>
                         </li>
                     <?php endif; ?>
-                    
+
                 </ul>
             </div>
         </div>
     </nav>
 </body>
+
 </html>
