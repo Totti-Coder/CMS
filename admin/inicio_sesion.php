@@ -2,6 +2,11 @@
 session_start();
 include '../incluir/conexion.php';
 
+// CONFIGURACIÓN DE SEGURIDAD para evitar ataques de fuerza bruta
+$MAX_INTENTOS = 3; 
+$TIEMPO_BLOQUEO = 90; 
+
+
 // Lógica de Redirección si ya hay sesión 
 if (isset($_SESSION['admin'])) {
     header("Location: gestion_productos.php");
@@ -20,12 +25,35 @@ if (isset($_SESSION['alerta_login'])) {
 
 $error = ''; 
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+// VERIFICACIÓN DE BLOQUEO ANTES DE PROCESAR EL FORMULARIO
+if (isset($_SESSION['bloqueo_login_tiempo']) && $_SESSION['bloqueo_login_tiempo'] > time()) {
+    $tiempo_restante = $_SESSION['bloqueo_login_tiempo'] - time();
+    // Convierte el tiempo restante a minutos y segundos
+    $minutos = floor($tiempo_restante / 60);
+    $segundos = $tiempo_restante % 60;
+    
+    // Mensaje de error personalizado para el bloqueo
+    $error = "Demasiados intentos de sesión fallidos. Por favor, espera ";
+    if ($minutos > 0) {
+        $error .= "$minutos minuto(s) ";
+    }
+    $error .= "$segundos segundo(s) antes de intentarlo de nuevo.";
+}
+
+
+//PROCESAMIENTO DEL FORMULARIO DE INICIO DE SESION
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && !$error) { // Solo procesar si no está bloqueado
+    
+    // Inicializar intentos si no existen
+    if (!isset($_SESSION['intentos_fallidos'])) {
+        $_SESSION['intentos_fallidos'] = 0;
+    }
+    
     $usuario = trim($_POST['usuario']); 
     $password_ingresada = $_POST['password']; 
 
     // Setencia preparada que busca el usuario y recupera el hash y el rol
-    $stmt = $conexion->prepare("SELECT password, rol FROM usuarios WHERE usuario = ?");
+    $stmt = $conexion->prepare("SELECT password, rol FROM usuarios WHERE usuario = ?"); // El uso de ? previene ataques de inyeccion SQL evita que se puede ingresar codigo ejecutable en la BBDD.
 
     if ($stmt === false) {
         $error = "Error interno del sistema al preparar la consulta.";
@@ -41,8 +69,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $rol = $fila['rol'];
 
             // Usar password_verify() para comparar la contraseña ingresada
-            // con el hash almacenado.
             if (password_verify($password_ingresada, $hash_almacenado)) {
+                
+                //LOGIN EXITOSO: RESETEAR INTENTOS Y BLOQUEO TEMPORAL
+                unset($_SESSION['intentos_fallidos']);
+                unset($_SESSION['bloqueo_login_tiempo']);
+                
                 
                 // Contraseña correcta: Iniciar sesión y redirigir
                 if ($rol === 'admin') {
@@ -54,19 +86,44 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     header("Location: ../index.php"); 
                     exit();
                 }
+                
+                
             } else {
-                // Contraseña no coincide con el hash
-                $error = "Usuario o contraseña incorrectos."; 
+                // CONTRASEÑA INCORRECTA: MANEJAR INTENTOS 
+                $_SESSION['intentos_fallidos']++;
+                $intentos_restantes = $MAX_INTENTOS - $_SESSION['intentos_fallidos'];
+                
+                if ($_SESSION['intentos_fallidos'] >= $MAX_INTENTOS) {
+                    // Bloqueo: Registrar el momento del bloqueo
+                    $_SESSION['bloqueo_login_tiempo'] = time() + $TIEMPO_BLOQUEO;
+                    $error = "Contraseña incorrecta. Has superado los $MAX_INTENTOS intentos. Tu acceso ha sido bloqueado por " . $TIEMPO_BLOQUEO . " segundos.";
+                } else {
+                    // Contraseña no coincide con el hash
+                    $error = "Usuario o contraseña incorrectos. Te quedan $intentos_restantes intento(s)."; 
+                }
             }
+            
+            
         } else {
-            // Usuario no encontrado
-            $error = "Usuario o contraseña incorrectos.";
+            // Usuario no encontrado (también cuenta como intento fallido para prevenir enumeración) => $resultado->num_rows == 0
+             if (!isset($_SESSION['intentos_fallidos'])) {
+                $_SESSION['intentos_fallidos'] = 0;
+            }
+            $_SESSION['intentos_fallidos']++;
+            $intentos_restantes = $MAX_INTENTOS - $_SESSION['intentos_fallidos'];
+
+            if ($_SESSION['intentos_fallidos'] >= $MAX_INTENTOS) {
+                 $_SESSION['bloqueo_login_tiempo'] = time() + $TIEMPO_BLOQUEO;
+                $error = "Usuario o contraseña incorrectos. Has superado los $MAX_INTENTOS intentos. Tu acceso ha sido bloqueado por " . $TIEMPO_BLOQUEO . " segundos.";
+            } else {
+                $error = "Usuario o contraseña incorrectos. Te quedan $intentos_restantes intento(s).";
+            }
         }
+        
         $stmt->close();
     }
 }
 ?>
-
 
 <!DOCTYPE html>
 <html lang="es">
@@ -98,14 +155,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <i class="fas fa-lock text-success"></i> Iniciar Sesión
                         </h2>
                        <?php 
-						// Verifica que $error tenga CONTENIDO (no solo que exista)
-						if ($error) { 
-   						 echo '<div class="alert alert-danger text-center">' . $error . '</div>'; 
-						} 
-						if ($alerta_login) { 
-   					 echo '<div class="alert alert-warning text-center">' . $alerta_login . '</div>'; 
-							}
-					?>
+                        // Verifica que $error tenga CONTENIDO (no solo que exista)
+                        if ($error) { 
+                         echo '<div class="alert alert-danger text-center">' . $error . '</div>'; 
+                        } 
+                        if ($alerta_login) { 
+                           echo '<div class="alert alert-warning text-center">' . $alerta_login . '</div>'; 
+                            }
+                    ?>
                         
                         <form method="POST" action="">
                             <div class="form-group">
