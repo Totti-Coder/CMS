@@ -1,7 +1,7 @@
 # 🚀 Totti-Coder/CMS
 ## ✨ Sistema de Gestión de Contenidos (Content Management System)
 
-Un CMS moderno, ligero y robusto, diseñado para facilitar la creación y administración de contenido web dinámico sin la necesidad de conocimientos de programación. Ideal para blogs, sitios web corporativos, tiendas sencillas o plataformas de noticias.
+Un CMS moderno, ligero y robusto, diseñado para facilitar la creación y administración de contenido web dinámico.
 
 ---
 
